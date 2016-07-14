@@ -2,6 +2,67 @@ LootActorState = { }
 LootActorState.__index = LootActorState
 LootActorState.Name = "LootActor"
 
+CombatLootState = { }
+CombatLootState.__index = CombatLootState
+CombatLootState.Name = "CombatLoot"
+
+function CombatLootState:NeedToRun()
+    if self.Settings.CombatLoot == false then
+        return false
+    end
+
+    local player = GetSelfPlayer()
+    if player == nil then
+        return false
+    end
+
+    local closestLoot = self:FindClosestLoot()
+    if closestLoot == nil then
+        return false
+    end
+
+    if self.BlacklistActors:Contains(closestLoot.Guid) then
+        return false
+    end
+
+    local closestAggro = nil
+    local aggroCount = 0
+
+    for _, v in ipairs(GetMonsters()) do
+        if v.IsAggro then
+            aggroCount = aggroCount + 1
+            if closestAggro == nil or v.Position.Distance3DFromMe < closestAggro.Position.Distance3DFromMe then
+                closestAggro = v
+            end
+        end
+    end
+
+    -- let regular loot handle this
+    if aggroCount == 0 then
+        return false
+    end
+
+    -- avoid if low health and more than 1 monster
+    if aggroCount > 1 and player.HealthPercent < 60 then
+        self.BlacklistActors:Add(closestLoot.Guid, 1)
+        return false
+    end
+
+    -- avoid if monster is too close?
+    if closestAggro.Position.Distance3DFromMe - closestAggro.BodySize - player.BodySize < 250 then
+        self.BlacklistActors:Add(closestLoot.Guid, 1)
+        return false
+    end
+
+    -- should avoid if monster is in path to loot but this should be ok for now
+    if (closestAggro.Position.Distance3DFromMe - closestAggro.BodySize - 50) <(closestLoot.Position.Distance3DFromMe - closestLoot.BodySize) then
+        self.BlacklistActors:Add(closestLoot.Guid, 1)
+        return false
+    end
+
+    return LootActorState.NeedToRun(self)
+end
+
 setmetatable(LootActorState, {
     __call = function(cls, ...)
         return cls.new(...)
@@ -13,7 +74,7 @@ function LootActorState.new()
     self._myTarget = nil
     self.BlacklistActors = PyxTimedList:New()
 
-    self.Settings = { TakeLoot = true, LootRadius = 4000, SkipLootPlayer = false, LogLoot = false, IgnoreBodyName = { } }
+    self.Settings = { TakeLoot = true, LootRadius = 4000, SkipLootPlayer = false, LogLoot = false, CombatLoot = false, IgnoreBodyName = { } }
     self.State = 0
     self.Stuck = false
     self.ItemCheckFunction = nil
@@ -24,6 +85,10 @@ function LootActorState.new()
     -- Format {Guid, Position}
     self._sleepTimer = nil
     self.Stuck = false
+
+    setmetatable(CombatLootState, { __index = self })
+    self.CombatLootState = setmetatable( { }, CombatLootState)
+
     return self
 end
 
@@ -179,7 +244,7 @@ function LootActorState:Run()
     if self._state >= 2 and Looting.IsLooting then
         local looted = { }
         local numLoots = Looting.ItemCount
-        print("Loot in it")
+        --        print("Loot in it")
 
         for i = 0, numLoots - 1 do
             local lootItem = Looting.GetItemByIndex(i)
@@ -195,7 +260,17 @@ function LootActorState:Run()
             end
         end
         Looting.Close()
-        self.State = 4
+
+        if self.Settings.LogLoot and #looted > 0 and self.LastLoggedBody ~= self._myTarget.Guid then
+            self.LastLoggedBody = self._myTarget.Guid
+            local f = io.open(Pyx.Scripting.CurrentScript.Directory .. "loot.txt", "a")
+            local bodyName = self:GetBodyName(self._myTarget)
+            local msg = string.format("%s %s - %s\n", os.date(), bodyName, table.concat(looted, ","))
+            f:write(msg)
+            f:close()
+        end
+
+        self._state = 4
         self._sleepTimer = PyxTimer:New(0.5)
         self._sleepTimer:Start()
         return true
@@ -228,7 +303,13 @@ function LootActorState:Run()
 
     if self._state == 3 then
         print("Too long to pickup skip")
-        self.BlacklistActors:Add(self._myTarget.Guid, 5)
+        self.BlacklistActors:Add(self._myTarget.Guid, 600)
+        if self.CallWhenCompleted then
+            self.CallWhenCompleted(self)
+        end
+        self._myTarget = nil
+        self._sleepTimer = nil
+        return true
     end
 
     local action = selfPlayer.CurrentActionName
@@ -243,10 +324,13 @@ function LootActorState:Run()
         self._state = 1
     elseif self._state == 1 then
         --        print("loot stop")
-        Bot.Pather:Stop()
+        if string.find(selfPlayer.CurrentActionName, "JUMP", 1) == nil then
+            Bot.Pather:Stop()
+        else
+            return
+        end
+
         if string.find(selfPlayer.CurrentActionName, "WAIT") == nil then
-            -- ~= "WAIT" and selfPlayer.CurrentActionName ~= "BT_WAIT" then
-            --            print("Loot Wait")
             return true
         end
         selfPlayer:ClearActionState()
