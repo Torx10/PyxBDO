@@ -85,7 +85,7 @@ function WarriorV3.new()
 	print("Creating spellbooks")
 	instance.SpellbookST = {}
 	table.insert(self.SpellbookST,instance.GROUND_ROAR)
-	table.insert(self.SpellbookST,instance.SCARS_OF_DUSK)
+--	table.insert(self.SpellbookST,instance.SCARS_OF_DUSK)
 	table.insert(self.SpellbookST,instance.CHOPPING_KICK)
 	table.insert(self.SpellbookST,instance.GROUND_SMASH)
 	table.insert(self.SpellbookST,instance.SPINNING_SLASH)
@@ -94,7 +94,7 @@ function WarriorV3.new()
 	
 	instance.SpellbookAOE = {}
 	table.insert(self.SpellbookAOE,instance.GROUND_ROAR)
-	table.insert(self.SpellbookAOE,instance.SCARS_OF_DUSK)
+--	table.insert(self.SpellbookAOE,instance.SCARS_OF_DUSK)
 	table.insert(self.SpellbookAOE,instance.GROUND_SMASH)
 	table.insert(self.SpellbookAOE,instance.SPINNING_SLASH)
 	table.insert(self.SpellbookAOE,instance.FORWARD_SLASH)
@@ -150,7 +150,7 @@ function WarriorV3:Attack(monsterActor)
 				return
 			end
             Navigator.MoveTo(targetPosition)
-        else
+        elseif selfPlayer.IsActionPending == false then
 			
 			
 			if self.ShouldGuard then
@@ -175,9 +175,8 @@ function WarriorV3:Attack(monsterActor)
 			-- If we have cast no spell at least auto attack 
 			print("Interacting - Autoattack")
 			selfPlayer:Interact(monsterActor) 
-        end
-         
-    end
+    	end
+	end
 end
 
 
