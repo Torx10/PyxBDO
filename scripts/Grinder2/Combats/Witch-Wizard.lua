@@ -1,6 +1,6 @@
 Magician = { }
 Magician.__index = Magician
-Magician.version = "3.0"
+Magician.version = "3.1"
 Magician.author = "torx"
 Magician.Gui = { }
 Magician.Gui.ShowGui = false
@@ -18,43 +18,44 @@ Magician.Gui.ResidualLightning = true
 -- Magic Arrow Options
 Magician.Gui.MagicArrow = true
 Magician.Gui.MultiArrow = true
-Magician.Gui.MultiArrowSlot = 1
 Magician.Gui.ConcentratedArrow = true
 -- Melee Options
 Magician.Gui.DaggerStab = true
 -- Speed Spell Options
 Magician.Gui.SpeedSpell = true
-Magician.Gui.SpeedSpellSlot = 4
 -- Health Options
 Magician.Gui.HealingAura = true
-Magician.Gui.LockHA = false
+-- Magician.Gui.LockHA = false
 Magician.Gui.HealingAuraHealthPercent = 75
 Magician.Gui.HealingAuraManaPercent = 60
 Magician.Gui.HealingLighthouse = true
-Magician.Gui.LockHL = false
+-- Magician.Gui.LockHL = false
 Magician.Gui.HealingLighthouseHealthPercent = 50
 Magician.Gui.HealingLighthouseManaPercent = 30
 -- Mana Options
 Magician.Gui.MagicAbsorb = true
-Magician.Gui.LockMA = false
+-- Magician.Gui.LockMA = false
 Magician.Gui.MagicAbsorbManaPercent = 50
 Magician.Gui.SpellboundHeart = true
-Magician.Gui.SpellboundHeartSlot = 2
-Magician.Gui.LockSB = false
+-- Magician.Gui.LockSB = false
 Magician.Gui.SpellboundHeartManaPercent = 80
 -- Defense Options
 Magician.Gui.MagicShield = true
-Magician.Gui.LockMS = false
+-- Magician.Gui.LockMS = false
 Magician.Gui.MagicShieldHealthPercent = 50
 Magician.Gui.MagicLighthouse = true
-Magician.Gui.LockML = false
+-- Magician.Gui.LockML = false
 Magician.Gui.MagicLighthouseHealthPercent = 40
-Magician.Gui.MagicLighthouseSlot = 3
 -- Cooldown Options
 Magician.Gui.SagesMemory = true
-Magician.Gui.SagesMemorySlot = 5
 Magician.Gui.MeteorShower = true
 Magician.Gui.Blizzard = true
+-- Quick Slot Options
+Magician.Gui.MultiArrowSlot = nil
+Magician.Gui.SpeedSpellSlot = nil
+Magician.Gui.SpellboundHeartSlot = nil
+Magician.Gui.MagicLighthouseSlot = nil
+Magician.Gui.SagesMemorySlot = nil
 
 -- NOT YET IMPLEMENTED
 -- Magician.Gui.EarthsResponse = true
@@ -87,11 +88,45 @@ Magician.V          = ACTION_FLAG_EMERGENCY_ESCAPE
 function Magician:FixFire()
     local selfPlayer = GetSelfPlayer()
     if selfPlayer:CheckCurrentAction("BT_Skill_Fireball_Ing") then
-        print("Fireball stuck...firing")
-        EdanCombo.SetActionState(Magician.LMB, 500 )
+        print("Fireball stuck as ROAMING starts...firing")
+        selfPlayer:SetActionState( Magician.RMB, 500 )
         return
     end
+end
 
+function Magician:findQuickSlotById(skillId)
+    local code = string.format([[
+    for i = 0, 25 do
+        local quickSlotKey = i - 1
+        local quickSlotInfo = getQuickSlotItem(quickSlotKey)
+        if CppEnums.QuickSlotType.eSkill == quickSlotInfo._type then
+            local skillNo = quickSlotInfo._skillKey:getSkillNo()
+            local skillTypeStaticWrapper = getSkillTypeStaticStatus(skillNo)
+            local skillName = skillTypeStaticWrapper:getName()
+            if skillNo == %i then
+                return quickSlotKey
+            end
+        end
+    end
+    ]], skillId)
+    slot = BDOLua.Execute(code)
+    return slot
+end
+
+if Magician.Gui.MultiArrowSlot == nil and EdanSkills.GetSkill(WITCH_MULTIPLE_MAGIC_ARROWS) ~= 0 then
+    Magician.Gui.MultiArrowSlot = Magician:findQuickSlotById(EdanSkills.GetSkill(WITCH_MULTIPLE_MAGIC_ARROWS))
+end
+if Magician.Gui.SpeedSpellSlot == nil and EdanSkills.GetSkill(WITCH_SPEED_SPELL) ~= 0 then
+    Magician.Gui.SpeedSpellSlot = Magician:findQuickSlotById(EdanSkills.GetSkill(WITCH_SPEED_SPELL))
+end
+if Magician.Gui.SpellboundHeartSlot == nil and EdanSkills.GetSkill(WITCH_SPELLBOUND_HEART) ~= 0 then
+    Magician.Gui.SpellboundHeartSlot = Magician:findQuickSlotById(EdanSkills.GetSkill(WITCH_SPELLBOUND_HEART))
+end
+if Magician.Gui.MagicLighthouseSlot == nil and EdanSkills.GetSkill(WITCH_MAGIC_LIGHTHOUSE) ~= 0 then
+    Magician.Gui.MagicLighthouseSlot = Magician:findQuickSlotById(EdanSkills.GetSkill(WITCH_MAGIC_LIGHTHOUSE))
+end
+if Magician.Gui.SagesMemorySlot == nil and EdanSkills.GetSkill(WITCH_SAGES_MEMORY) ~= 0 then
+    Magician.Gui.SagesMemorySlot = Magician:findQuickSlotById(EdanSkills.GetSkill(WITCH_SAGES_MEMORY))
 end
 
 ------------- Attack Rotation --------------------------------------------------------------------------------------------
@@ -144,10 +179,11 @@ end
 ------------- Combos -----------------------------------------------------------------------------------------------------
 function Magician:Combos()
     if self.player.IsActionPending then
+        print("action is pending")
         return
     end
 
-    self:FixFire()
+    Magician:FixFire()
     Bot.Pather:Stop()
 
     -- Use Healing Aura
@@ -160,22 +196,22 @@ function Magician:Combos()
     -- Use Healing Lighthouse
     if Magician.Gui.HealingLighthouse and (self.player.HealthPercent <= Magician.Gui.HealingLighthouseHealthPercent or self.player.ManaPercent <= Magician.Gui.HealingLighthouseManaPercent) and EdanSkills.SkillUsableCooldown(WITCH_HEALING_LIGHTHOUSE) then
         print( "Casting Healing Lighthouse" )
-        EdanCombo.PressAndWait( Magician.Shift | Magician.E )
+        EdanCombo.PressAndWait( Magician.Shift + Magician.E )
         return
     end
 
     -- Use Magical Absoption
     if Magician.Gui.MagicAbsorb and ((EdanScout.MonstersInMeleeRange == 0 and self.player.ManaPercent < Magician.Gui.MagicAbsorbManaPercent) or self.player.ManaPercent < 10) and EdanSkills.SkillUsableCooldown(WITCH_MANA_ABSORPTION) then
         print( "Casting Magical Absorption" )
-        EdanCombo.PressAndWait( Magician.Shift | Magician.LMB, self.monster.Position )
+        EdanCombo.PressAndWait( Magician.Shift + Magician.LMB, self.monster.Position )
         EdanCombo.Wait(1000)
         return
     end
 
     -- Use Spellbound Heart (Mana Orb)
-    if Magician.Gui.SpellboundHeart and self.player.ManaPercent <= Magician.Gui.SpellboundHeartManaPercent and EdanSkills.SkillUsableCooldown(WITCH_SPELLBOUND_HEART) then
+    if Magician.Gui.SpellboundHeart and Magician.Gui.SpellboundHeartSlot ~= nil and self.player.ManaPercent <= Magician.Gui.SpellboundHeartManaPercent and EdanSkills.SkillUsableCooldown(WITCH_SPELLBOUND_HEART) then
         print( "Casting Mana Orb" )
-        local slot = string.format([[quickSlot_UseSlot(%f)]], Magician.Gui.SpellboundHeartSlot-1)
+        local slot = string.format([[quickSlot_UseSlot(%f)]], Magician.Gui.SpellboundHeartSlot)
         BDOLua.Execute(slot)
         EdanCombo.WaitUntilDone()
         return
@@ -189,27 +225,27 @@ function Magician:Combos()
     end
 
     -- Use Magic Lighthouse
-    if Magician.Gui.MagicLighthouse and EdanScout.MonstersInMeleeRange > 2 and self.player.HealthPercent <= Magician.Gui.MagicLighthouseHealthPercent and EdanSkills.SkillUsableCooldown(WITCH_MAGIC_LIGHTHOUSE) then
+    if Magician.Gui.MagicLighthouse and Magician.Gui.MagicLighthouseSlot ~= nil and EdanScout.MonstersInMeleeRange > 2 and self.player.HealthPercent <= Magician.Gui.MagicLighthouseHealthPercent and EdanSkills.SkillUsableCooldown(WITCH_MAGIC_LIGHTHOUSE) then
         print( "Casting Taunt Orb" )
-        local slot = string.format([[quickSlot_UseSlot(%f)]], Magician.Gui.MagicLighthouseSlot-1)
+        local slot = string.format([[quickSlot_UseSlot(%f)]], Magician.Gui.MagicLighthouseSlot)
         BDOLua.Execute(slot)
         EdanCombo.WaitUntilDone()
         return
     end
 
     -- Use Speed Spell
-    if Magician.Gui.SpeedSpell and EdanScout.MonstersInMeleeRange == 0 and EdanSkills.SkillUsableCooldown( WITCH_SPEED_SPELL ) then
+    if Magician.Gui.SpeedSpell and Magician.Gui.SpeedSpellSlot ~= nil and EdanScout.MonstersInMeleeRange == 0 and EdanSkills.SkillUsableCooldown( WITCH_SPEED_SPELL ) then
         print( "Casting Speed Buff from quickslot" )
-        local slot = string.format([[quickSlot_UseSlot(%f)]], Magician.Gui.SpeedSpellSlot-1)
+        local slot = string.format([[quickSlot_UseSlot(%f)]], Magician.Gui.SpeedSpellSlot)
         BDOLua.Execute(slot)
         EdanCombo.WaitUntilDone()
         return
     end
 
     -- Use Sages Wisdom
-    if Magician.Gui.SagesMemory and #EdanScout.Monsters >= 3 and EdanSkills.SkillUsableCooldown(WITCH_SAGES_MEMORY)  and not self.player:HasBuffById(110) and (EdanSkills.SkillUsableCooldown(WITCH_METEOR_SHOWER) or (EdanSkills.SkillUsableCooldown(WITCH_BLIZZARD) or EdanSkills.SkillUsableCooldown(WITCH_ULTIMATE_BLIZZARD))) then
+    if Magician.Gui.SagesMemory and Magician.Gui.SagesMemorySlot ~= nil and #EdanScout.Monsters >= 3 and EdanSkills.SkillUsableCooldown(WITCH_SAGES_MEMORY)  and not self.player:HasBuffById(110) and (EdanSkills.SkillUsableCooldown(WITCH_METEOR_SHOWER) or (EdanSkills.SkillUsableCooldown(WITCH_BLIZZARD) or EdanSkills.SkillUsableCooldown(WITCH_ULTIMATE_BLIZZARD))) then
         print( "Casting Sages Wisdom" )
-        local slot = string.format([[quickSlot_UseSlot(%f)]], Magician.Gui.SagesMemorySlot-1)
+        local slot = string.format([[quickSlot_UseSlot(%f)]], Magician.Gui.SagesMemorySlot)
         BDOLua.Execute(slot)
         EdanCombo.WaitUntilDone()
         EdanCombo.Wait(300)
@@ -219,14 +255,14 @@ function Magician:Combos()
     -- Use Meteor Shower
     if Magician.Gui.MeteorShower and self.player:HasBuffById(110) and EdanSkills.SkillUsableCooldown(WITCH_METEOR_SHOWER) then
         print( "Casting Meteor Shower" )
-        EdanCombo.SetActionStateAtPosition( Magician.S | Magician.LMB | Magician.RMB, self.monster.Position, 4000 )
+        EdanCombo.SetActionStateAtPosition( Magician.S + Magician.LMB + Magician.RMB, self.monster.Position, 4000 )
         return
     end
 
     -- Use Blizzard
     if Magician.Gui.Blizzard and self.player:HasBuffById(110) and (EdanSkills.SkillUsableCooldown(WITCH_BLIZZARD) or EdanSkills.SkillUsableCooldown(WITCH_ULTIMATE_BLIZZARD)) then
         print( "Casting Blizzard" )
-        EdanCombo.SetActionStateAtPosition( Magician.Shift | Magician.LMB | Magician.RMB, self.monster.Position, 4000 )
+        EdanCombo.SetActionStateAtPosition( Magician.Shift + Magician.LMB + Magician.RMB, self.monster.Position, 4000 )
         return
     end
 
@@ -234,13 +270,13 @@ function Magician:Combos()
     if Magician.Gui.Lightning and EdanSkills.SkillUsableCooldown(WITCH_LIGHTNING) and (self.player.BlackRage < 100 or #EdanScout.Monsters >= 3) then
         if Magician.Gui.ResidualLightning and EdanSkills.SkillUsableCooldown(WITCH_RESIDUAL_LIGHTNING) then
             print( "Casting Lightning with Residual to follow" )
-            EdanCombo.SetActionStateAtPosition( Magician.S | Magician.F, self.monster.Position, 1000 )
+            EdanCombo.SetActionStateAtPosition( Magician.S + Magician.F, self.monster.Position, 1000 )
             print( "Casting Residual Lightning after Lightning" )
             EdanCombo.PressAndWait( Magician.RMB, self.monster.Position, 1000 )
             EdanCombo.Wait(1000)
         else
             print( "Casting Lightning" )
-            EdanCombo.PressAndWait( Magician.S | Magician.F, self.monster.Position, 500 )
+            EdanCombo.PressAndWait( Magician.S + Magician.F, self.monster.Position, 500 )
             EdanCombo.Wait(500)
         end
         return
@@ -250,7 +286,7 @@ function Magician:Combos()
     if Magician.Gui.Fireball and EdanSkills.SkillUsableCooldown(WITCH_FIREBALL) and self.player.ManaPercent > 10 then
         Bot.Pather:Stop()
         print( "Casting Fireball" )
-        EdanCombo.SetActionState( Magician.S | Magician.LMB, 500 )
+        EdanCombo.SetActionState( Magician.S + Magician.LMB, 500 )
         if EdanScout.MonstersInMeleeRange == 0 then
             EdanCombo.WaitUntilNotDoing("^BT_Skill_Fireball_Cast_")
         end
@@ -263,9 +299,9 @@ function Magician:Combos()
     end
 
     -- Use Multiple Magic Arrows
-    if Magician.Gui.MultiArrow and EdanSkills.SkillUsableCooldown(WITCH_MULTIPLE_MAGIC_ARROWS) then
+    if Magician.Gui.MultiArrow and Magician.Gui.MultiArrowSlot ~= nil and EdanSkills.SkillUsableCooldown(WITCH_MULTIPLE_MAGIC_ARROWS) then
         print( "Casting Multiple Magic Arrows" )
-        local slot = string.format([[quickSlot_UseSlot(%f)]], Magician.Gui.MultiArrowSlot-1)
+        local slot = string.format([[quickSlot_UseSlot(%f)]], Magician.Gui.MultiArrowSlot)
         BDOLua.Execute(slot)
         EdanCombo.WaitUntilDone()
         return
@@ -275,10 +311,10 @@ function Magician:Combos()
     if Magician.Gui.LightningChain and self.player.ManaPercent > 30 and EdanSkills.SkillUsable(WITCH_LIGHTNING_CHAIN) then
         Bot.Pather:Stop()
         print( "Casting Lightning Chain" )
-        EdanCombo.HoldUntilDone( Magician.Shift | Magician.RMB, self.monster.Position )
+        EdanCombo.HoldUntilDone( Magician.Shift + Magician.RMB, self.monster.Position )
         if Magician.Gui.LightningStorm and self.player:HasBuffById(1002) and EdanSkills.SkillUsable(WITCH_LIGHTNING_STORM) then
             print( "Casting Lightning Chain with Storm to follow" )
-            EdanCombo.SetActionStateAtPosition( Magician.LMB | Magician.RMB, self.monster.Position, 1500 )
+            EdanCombo.SetActionStateAtPosition( Magician.LMB + Magician.RMB, self.monster.Position, 1500 )
         end
         return
     end
@@ -286,7 +322,7 @@ function Magician:Combos()
     -- Use Concentrated Magical Arrow
     if Magician.Gui.ConcentratedArrow and EdanSkills.SkillUsable(WITCH_CONCENTRATED_MAGIC_ARROW) and self.player.ManaPercent > 15 then
         print( "Casting Concentrated Magic Arrow" )
-        EdanCombo.SetActionStateAtPosition( Magician.LMB | Magician.RMB, self.monster.Position, 1000 )
+        EdanCombo.SetActionStateAtPosition( Magician.LMB + Magician.RMB, self.monster.Position, 1000 )
         return
     end
 
@@ -304,7 +340,6 @@ function Magician:Combos()
         EdanCombo.Wait(500)
         return
     end
-
 end
 
 ------------- Roaming ----------------------------------------------------------------------------------------------------
@@ -314,7 +349,7 @@ function Magician:Roaming()
 
     if selfPlayer:CheckCurrentAction("BT_Skill_Fireball_Ing") then
         print("Fireball stuck as ROAMING starts...firing")
-        selfPlayer:SetActionState( Magician.LMB, 500 )
+        selfPlayer:SetActionState( Magician.RMB, 500 )
         return
     end
     self.combos = nil
@@ -333,7 +368,70 @@ end
 ------------- User Interface ---------------------------------------------------------------------------------------------
 function Magician:UserInterface()
   if Magician.Gui.ShowGui then
-    _, Magician.Gui.ShowGui = ImGui.Begin("Magician - Options", true, ImVec2(150, 50), -1.0, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize)
+    _, Magician.Gui.ShowGui = ImGui.Begin("Magician - Options", true, ImVec2(150, 50), -1.0, ImGuiWindowFlags_AlwaysAutoResize + ImGuiWindowFlags_NoResize)
+    if Magician.Gui.MultiArrowSlot == nil and EdanSkills.GetSkill(WITCH_MULTIPLE_MAGIC_ARROWS) ~= 0 then
+        ImGui.Text("Multiple Magic Arrow must be on a quickslot for it to work")
+    end
+    if Magician.Gui.SpeedSpellSlot == nil and EdanSkills.GetSkill(WITCH_SPEED_SPELL) ~= 0 then
+        ImGui.Text("Speed Spell must be on a quickslot for it to work")
+    end
+    if Magician.Gui.SpellboundHeartSlot == nil and EdanSkills.GetSkill(WITCH_SPELLBOUND_HEART) ~= 0 then
+        ImGui.Text("Spellbound Heart must be on a quickslot for it to work")
+    end
+    if Magician.Gui.MagicLighthouseSlot == nil and EdanSkills.GetSkill(WITCH_MAGIC_LIGHTHOUSE) ~= 0 then
+        ImGui.Text("Magic Lighthouse must be on a quickslot for it to work")
+    end
+    if Magician.Gui.SagesMemorySlot == nil and EdanSkills.GetSkill(WITCH_SAGES_MEMORY) ~= 0 then
+        ImGui.Text("Sages Memory must be on a quickslot for it to work")
+    end
+    if EdanSkills.GetSkill(WITCH_MULTIPLE_MAGIC_ARROWS) ~= 0 or EdanSkills.GetSkill(WITCH_SPEED_SPELL) ~= 0 or EdanSkills.GetSkill(WITCH_SPELLBOUND_HEART) ~= 0 or EdanSkills.GetSkill(WITCH_MAGIC_LIGHTHOUSE) ~= 0 or EdanSkills.GetSkill(WITCH_SAGES_MEMORY) ~= 0 then
+        ImGui.Separator()
+        ImGui.Columns(2, "SkillData", true)
+        ImGui.TextColored(ImVec4(1,0.843,0,1), "Skill")
+        ImGui.NextColumn()
+        ImGui.TextColored(ImVec4(1,0.843,0,1), "QuickSlot")
+        ImGui.NextColumn()
+        ImGui.Separator()
+        if EdanSkills.GetSkill(WITCH_MULTIPLE_MAGIC_ARROWS) ~= 0 then
+            ImGui.Text("Multiple Magic Arrow")
+            ImGui.NextColumn()
+            ImGui.Text(tostring(Magician.Gui.MultiArrowSlot))
+            ImGui.NextColumn()
+        end
+        if EdanSkills.GetSkill(WITCH_SPEED_SPELL) ~= 0 then
+            ImGui.Text("Speed Spell")
+            ImGui.NextColumn()
+            ImGui.Text(tostring(Magician.Gui.SpeedSpellSlot))
+            ImGui.NextColumn()
+        end
+        if EdanSkills.GetSkill(WITCH_SPELLBOUND_HEART) ~= 0 then
+            ImGui.Text("Spellbound Heart")
+            ImGui.NextColumn()
+            ImGui.Text(tostring(Magician.Gui.SpellboundHeartSlot))
+            ImGui.NextColumn()
+        end
+        if EdanSkills.GetSkill(WITCH_MAGIC_LIGHTHOUSE) ~= 0 then
+            ImGui.Text("Magic Lighthouse")
+            ImGui.NextColumn()
+            ImGui.Text(tostring(Magician.Gui.MagicLighthouseSlot))
+            ImGui.NextColumn()
+        end
+        if EdanSkills.GetSkill(WITCH_SAGES_MEMORY) ~= 0 then
+            ImGui.Text("Sages Memory")
+            ImGui.NextColumn()
+            ImGui.Text(tostring(Magician.Gui.SagesMemorySlot))
+            ImGui.NextColumn()
+        end
+        ImGui.Columns(1)
+        ImGui.Separator()
+        if ImGui.Button("Reload QuickSlots", ImVec2(ImGui.GetContentRegionAvailWidth(), 20)) then
+            Magician.Gui.MultiArrowSlot = Magician:findQuickSlotById(EdanSkills.GetSkill(WITCH_MULTIPLE_MAGIC_ARROWS))
+            Magician.Gui.SpeedSpellSlot = Magician:findQuickSlotById(EdanSkills.GetSkill(WITCH_SPEED_SPELL))
+            Magician.Gui.SpellboundHeartSlot = Magician:findQuickSlotById(EdanSkills.GetSkill(WITCH_SPELLBOUND_HEART))
+            Magician.Gui.MagicLighthouseSlot = Magician:findQuickSlotById(EdanSkills.GetSkill(WITCH_MAGIC_LIGHTHOUSE))
+            Magician.Gui.SagesMemorySlot = Magician:findQuickSlotById(EdanSkills.GetSkill(WITCH_SAGES_MEMORY))
+        end
+    end
     if ImGui.CollapsingHeader( "Spell Options","id_spell_options" ,true ,true) then
         if EdanSkills.GetSkill(WITCH_FIREBALL) ~= 0 or EdanSkills.GetSkill(WITCH_FIREBALL_EXPLOSION) ~= 0 then
             if ImGui.TreeNode("Fireball Options") then
@@ -367,7 +465,6 @@ function Magician:UserInterface()
             _, Magician.Gui.MagicArrow = ImGui.Checkbox("Use Magic Arrow##id_gui_magicarrow", Magician.Gui.MagicArrow)
             if EdanSkills.GetSkill(WITCH_MULTIPLE_MAGIC_ARROWS) ~= 0 then
                 _, Magician.Gui.MultiArrow = ImGui.Checkbox("Use Multiple Magic Arrow##id_gui_multiarrow", Magician.Gui.MultiArrow)
-                _, Magician.Gui.MultiArrowSlot = ImGui.SliderInt("Multiple Magic Arrow QuickSlot##id_gui_multiarrowquickslot", Magician.Gui.MultiArrowSlot, 1, 20)
             end
             if EdanSkills.GetSkill(WITCH_CONCENTRATED_MAGIC_ARROW) ~= 0 then
                 _, Magician.Gui.ConcentratedArrow = ImGui.Checkbox("Use Concentrated Magic Arrow##id_gui_concentratedarrow", Magician.Gui.ConcentratedArrow)
@@ -377,7 +474,6 @@ function Magician:UserInterface()
         if ImGui.TreeNode("Speed Buff Options") then
             if EdanSkills.GetSkill(WITCH_SPEED_SPELL) ~= 0 then
                 _, Magician.Gui.SpeedSpell = ImGui.Checkbox("Use Speed Spell##id_gui_speedspell", Magician.Gui.SpeedSpell)
-                _, Magician.Gui.SpeedSpellSlot = ImGui.SliderInt("Speed Spell QuickSlot##id_gui_speedspellquickslot", Magician.Gui.SpeedSpellSlot, 1, 20)
             end
             ImGui.TreePop()
         end
@@ -392,9 +488,9 @@ function Magician:UserInterface()
         if ImGui.TreeNode("Health Recovery Options") then
             if EdanSkills.GetSkill(WITCH_HEALING_AURA) ~= 0 then
                 _, Magician.Gui.HealingAura = ImGui.Checkbox("Use Healing Aura##id_gui_healingaura", Magician.Gui.HealingAura)
-                ImGui.SameLine()
-                _, Magician.Gui.LockHA = ImGui.Checkbox("Lock Values##id_gui_lockhealingaura", Magician.Gui.LockHA)
-                if Magician.Gui.HealingAura and not Magician.Gui.LockHA then
+                --ImGui.SameLine()
+                --_, Magician.Gui.LockHA = ImGui.Checkbox("Lock Values##id_gui_lockhealingaura", Magician.Gui.LockHA)
+                if Magician.Gui.HealingAura then --and not Magician.Gui.LockHA then
                     _, Magician.Gui.HealingAuraHealthPercent = ImGui.SliderInt("HP%##id_gui_healingaura_hp", Magician.Gui.HealingAuraHealthPercent, 1, 95)
                     _, Magician.Gui.HealingAuraManaPercent = ImGui.SliderInt("MP%##id_gui_healingaura_mp", Magician.Gui.HealingAuraManaPercent, 1, 95)
                 end
@@ -402,9 +498,9 @@ function Magician:UserInterface()
 
             if EdanSkills.GetSkill(WITCH_HEALING_LIGHTHOUSE) ~= 0 then
                 _, Magician.Gui.HealingLighthouse = ImGui.Checkbox("Use Healing Lighthouse##id_gui_healinglighthouse", Magician.Gui.HealingLighthouse)
-                ImGui.SameLine()
-                _, Magician.Gui.LockHL = ImGui.Checkbox("Lock Values##id_gui_lockhealinglighthouse", Magician.Gui.LockHL)
-                if Magician.Gui.HealingLighthouse and not Magician.Gui.LockHL then
+                --ImGui.SameLine()
+                --_, Magician.Gui.LockHL = ImGui.Checkbox("Lock Values##id_gui_lockhealinglighthouse", Magician.Gui.LockHL)
+                if Magician.Gui.HealingLighthouse then --and not Magician.Gui.LockHL then
                     _, Magician.Gui.HealingLighthouseHealthPercent = ImGui.SliderInt("HP%##id_gui_healinglighthouse_hp", Magician.Gui.HealingLighthouseHealthPercent, 1, 95)
                     _, Magician.Gui.HealingLighthouseManaPercent = ImGui.SliderInt("MP%##id_gui_healinglighthouse_mp", Magician.Gui.HealingLighthouseManaPercent, 1, 95)
                 end
@@ -417,20 +513,19 @@ function Magician:UserInterface()
         if ImGui.TreeNode("Mana Recovery Options") then
             if EdanSkills.GetSkill(WITCH_MANA_ABSORPTION) ~= 0 then
                 _, Magician.Gui.MagicAbsorb = ImGui.Checkbox("Use Mana Drain##id_gui_manadrain", Magician.Gui.MagicAbsorb)
-                ImGui.SameLine()
-                _, Magician.Gui.LockMA = ImGui.Checkbox("Lock Value##id_gui_lockmanadrain", Magician.Gui.LockMA)
-                if Magician.Gui.MagicAbsorb and not Magician.Gui.LockMA then
+                --ImGui.SameLine()
+                --_, Magician.Gui.LockMA = ImGui.Checkbox("Lock Value##id_gui_lockmanadrain", Magician.Gui.LockMA)
+                if Magician.Gui.MagicAbsorb then --and not Magician.Gui.LockMA then
                     _, Magician.Gui.MagicAbsorbManaPercent = ImGui.SliderInt("MP%##id_gui_manadrain_mp", Magician.Gui.MagicAbsorbManaPercent, 1, 95)
                 end
             end
 
             if EdanSkills.GetSkill(WITCH_SPELLBOUND_HEART) ~= 0 then
                 _, Magician.Gui.SpellboundHeart = ImGui.Checkbox("Use Spellbound Heart##id_gui_spellboundheart", Magician.Gui.SpellboundHeart)
-                ImGui.SameLine()
-                _, Magician.Gui.LockSB = ImGui.Checkbox("Lock Value##id_gui_lockspellboundheart", Magician.Gui.LockSB)
-                if Magician.Gui.SpellboundHeart and not Magician.Gui.LockSB then
+                --ImGui.SameLine()
+                --_, Magician.Gui.LockSB = ImGui.Checkbox("Lock Value##id_gui_lockspellboundheart", Magician.Gui.LockSB)
+                if Magician.Gui.SpellboundHeart then --and not Magician.Gui.LockSB then
                     _, Magician.Gui.SpellboundHeartManaPercent = ImGui.SliderInt("MP%##id_gui_spellboundheart_mp", Magician.Gui.SpellboundHeartManaPercent, 1, 95)
-                    _, Magician.Gui.SpellboundHeartSlot = ImGui.SliderInt("Spellbound Heart QuickSlot##id_gui_spellboundheartquickslot", Magician.Gui.SpellboundHeartSlot, 1, 20)
                 end
             end
 
@@ -440,20 +535,19 @@ function Magician:UserInterface()
         if ImGui.TreeNode("Defense Options") then
             if EdanSkills.GetSkill(WITCH_MAGICAL_SHIELD) ~= 0 then
                 _, Magician.Gui.MagicShield = ImGui.Checkbox("Use Magic Shield##id_gui_magicshield", Magician.Gui.MagicShield)
-                ImGui.SameLine()
-                _, Magician.Gui.LockMS = ImGui.Checkbox("Lock Value##id_gui_lockmagicshield", Magician.Gui.LockMS)
-                if Magician.Gui.MagicShield and not Magician.Gui.LockMS then
+                --ImGui.SameLine()
+                --_, Magician.Gui.LockMS = ImGui.Checkbox("Lock Value##id_gui_lockmagicshield", Magician.Gui.LockMS)
+                if Magician.Gui.MagicShield then --and not Magician.Gui.LockMS then
                     _, Magician.Gui.MagicShieldHealthPercent = ImGui.SliderInt("HP%##id_gui_magicshield_hp", Magician.Gui.MagicShieldHealthPercent, 1, 95)
                 end
             end
 
             if EdanSkills.GetSkill(WITCH_MAGIC_LIGHTHOUSE) ~= 0 then
                 _, Magician.Gui.MagicLighthouse = ImGui.Checkbox("Use Magic Lighthouse##id_gui_magiclighthouse", Magician.Gui.MagicLighthouse)
-                ImGui.SameLine()
-                _, Magician.Gui.LockML = ImGui.Checkbox("Lock Value##id_gui_lockmagiclighthouse", Magician.Gui.LockML)
-                if Magician.Gui.MagicLighthouse and not Magician.Gui.LockML then
+                --ImGui.SameLine()
+                --_, Magician.Gui.LockML = ImGui.Checkbox("Lock Value##id_gui_lockmagiclighthouse", Magician.Gui.LockML)
+                if Magician.Gui.MagicLighthouse then --and not Magician.Gui.LockML then
                     _, Magician.Gui.MagicLighthouseHealthPercent = ImGui.SliderInt("HP%##id_gui_magiclighthouse_hp", Magician.Gui.MagicLighthouseHealthPercent, 1, 95)
-                    _, Magician.Gui.MagicLighthouseSlot = ImGui.SliderInt("Magic Lighthouse QuickSlot##id_gui_magiclighthousequickslot", Magician.Gui.MagicLighthouseSlot, 1, 20)
                 end
             end
 
@@ -465,7 +559,6 @@ function Magician:UserInterface()
     if EdanSkills.GetSkill(WITCH_BLIZZARD) ~= 0 or EdanSkills.GetSkill(WITCH_ULTIMATE_BLIZZARD) ~= 0 or EdanSkills.GetSkill(WITCH_METEOR_SHOWER) ~= 0 then
         if ImGui.CollapsingHeader( "Cooldown Options","id_cd_options" ,true ,true) then
             _, Magician.Gui.SagesMemory = ImGui.Checkbox("Use Sages Memory##id_gui_sagememory", Magician.Gui.SagesMemory)
-            _, Magician.Gui.SagesMemorySlot = ImGui.SliderInt("Sages Memory QuickSlot##id_gui_sagememoryquickslot", Magician.Gui.SagesMemorySlot, 1, 20)
             if Magician.Gui.SagesMemory then
                 if EdanSkills.GetSkill(WITCH_BLIZZARD) ~= 0 or EdanSkills.GetSkill(WITCH_ULTIMATE_BLIZZARD) ~= 0 then
                     _, Magician.Gui.Blizzard = ImGui.Checkbox("Use Blizzard##id_gui_blizzard", Magician.Gui.Blizzard)
