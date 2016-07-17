@@ -1,234 +1,409 @@
-VitalicTamer = { }
-VitalicTamer.__index = VitalicTamer
-VitalicTamer.Author = "Vitalic"
-VitalicTamer.Version = "1.0"
-VitalicTamer.GrinderVersion = 2
+Feral = { }
+Feral.__index = Feral
+Feral.Version = "1.0"
+Feral.Author = "torx"
+Feral.Gui = { }
+Feral.Gui.ShowGui = false
+Feral.GrinderVersion = 2
 
-------------------------- SKILL ID'S -------------------------------------------------------------------------
+local trampleCount = 0
 
-VitalicTamer.ABSORB_HEILANG = { 231, 230, 229, 36, 35, 34 }
-VitalicTamer.BOLT_WAVE = { 18, 14, 13, 12, 11 }
-VitalicTamer.CHANCE_MAKER = { 33, 32, 31 }
-VitalicTamer.COMMAND_ATTACK = { 242 }
-VitalicTamer.COMMAND_FOLLOW = { 233 }
-VitalicTamer.COMMAND_STAY = { 232 }
-VitalicTamer.EVASION = { 363, 362, 1062 }
-VitalicTamer.EVASIVE_ATTACK = { 1221, 1220, 1065 }
-VitalicTamer.FLASH = { 1226, 1225, 1224, 1067 }
-VitalicTamer.FLASH_POLE_THRUST = { 87, 86, 85 }
-VitalicTamer.FLASH_STANCE_SHIFT = { 42, 41 }
-VitalicTamer.FLOWING_WATER = { 228, 84 }
-VitalicTamer.FLURRY_OF_KICKS = { 1219, 1218, 1217, 1064 }
-VitalicTamer.HEILANG_FEARFUL_TREMBLING = { 1076, 239, 238, 237, 236, 235 }
-VitalicTamer.HEILANG_EARTHQUAKE = { 1240, 1239, 1238, 1237, 1072 }
-VitalicTamer.HEILANG_LIGHTNING_OF_EARTH = { 1311, 1310, 1309, 1308 }
-VitalicTamer.HELIANG_ROARING = { 1245, 1244, 1243, 1242, 1241, 1073 }
-VitalicTamer.HEILANG_SCRATCH = { 1234, 1233, 1232, 1070 }
-VitalicTamer.HEILANG_SURGING_TIDE = { 1295, 1249, 1248, 1247, 1246, 1074 }
-VitalicTamer.HEILANG_THROAT_BURN = { 1236, 1235, 1071 }
-VitalicTamer.HEILANG_TRAMPLE = { 1231, 1230, 1069 }
-VitalicTamer.HEILANG_UPWARD_CLAW = { 212, 211, 210, 209, 208 }
-VitalicTamer.HEILANG_WHIPLASH = { 205, 132, 130, 129 }
-VitalicTamer.JOLT_WAVE = { 19, 17, 16, 15 }
-VitalicTamer.LEAF_SLASH = { 128, 126, 125, 124, 123, 127, 122, 1216, 1215, 1063 }
-VitalicTamer.SHARPENING_CLAWS = { 361, 360, 359, 358 }
-VitalicTamer.SOARING_KICK = { 135, 134, 133 }
-VitalicTamer.SPRING_OF_PROTECTION = { 1307, 1306, 1305 }
-VitalicTamer.SPRING_OF_STAMINA = { 1304, 1303, 1302, 1301 }
-VitalicTamer.STRETCH_KICK = { 241, 240 }
-VitalicTamer.SUMMON_HEILANG = { 1346, 1344, 1343, 1342, 1341, 1345, 1340, 1339, 1338, 1075, 1347 }
-VitalicTamer.TREE_CLIMB = { 1223, 1222, 1066 }
-VitalicTamer.VOID_LIGHTNING = { 1229, 1228, 1227, 1068 }
+------------- Gui Settings -----------------------------------------------------------------------------------------------
+-- Pet Options
+Feral.Gui.Pet = true
+Feral.Gui.PetAttack = true
+Feral.Gui.PetQuickSlot = nil
+Feral.Gui.PetAttackSlot = nil
+-- Flash Options
+Feral.Gui.Flash = true
+-- Pole Thrust Options
+Feral.Gui.PoleThrust = true
+-- Bolt Options
+Feral.Gui.Bolt = true
+-- Jolt Options
+Feral.Gui.Jolt = true
+-- Trample Options
+Feral.Gui.Trample = true
+Feral.Gui.TrampleManaPercent = 70
+-- Upward Claw Options
+Feral.Gui.UpwardClaw = true
+Feral.Gui.UpwardClawManaPercent = 60
+-- Whiplash Options
+Feral.Gui.Whiplash = true
+Feral.Gui.WhiplashManaPercent = 70
+-- Void Lightning Options
+Feral.Gui.Void = true
+Feral.Gui.VoidManaPercent = 60
+Feral.Gui.VoidMonsterCount = 4
+-- Legendary Beast Power Options
+Feral.Gui.LBP = true
+Feral.Gui.LBPStam = 200
+Feral.Gui.LBPManaPercent = 10
+-- Soaring Kick Options
+Feral.Gui.SoaringKick = true
 
----------------------------------------------------------------------------------------------------------------
+------------- SetActionState Buttons -------------------------------------------------------------------------------------
+Feral.LMB        = ACTION_FLAG_MAIN_ATTACK
+Feral.RMB        = ACTION_FLAG_SECONDARY_ATTACK
+Feral.Shift      = ACTION_FLAG_EVASION
+Feral.Space      = ACTION_FLAG_JUMP
+Feral.Q          = ACTION_FLAG_SPECIAL_ACTION_1
+Feral.E          = ACTION_FLAG_SPECIAL_ACTION_2
+Feral.F          = ACTION_FLAG_SPECIAL_ACTION_3
+Feral.W          = ACTION_FLAG_MOVE_FORWARD
+Feral.S          = ACTION_FLAG_MOVE_BACKWARD
+Feral.A          = ACTION_FLAG_MOVE_LEFT
+Feral.D          = ACTION_FLAG_MOVE_RIGHT
+Feral.Z          = ACTION_FLAG_PARTNER_COMMAND_1
+Feral.X          = ACTION_FLAG_PARTNER_COMMAND_2
+Feral.C          = ACTION_FLAG_AWEKENED_GEAR
+Feral.V          = ACTION_FLAG_EMERGENCY_ESCAPE
 
-setmetatable(VitalicTamer, {
-	__call = function (cls, ...)
-	return cls.new(...)
-end,
-})
-
------------------------------------------------------------------------------------------------------------------
-
-function VitalicTamer.new()
-	local instance = {}
-	local self = setmetatable(instance, VitalicTamer)
-
-	self.SummonPetInitial = false
-	self.SummonPetTimer = PyxTimer:New(600)
-
-	return self
+------------- functions --------------------------------------------------------------------------------------------------
+function Feral:PetCheck()
+    local mountCount = BDOLua.Execute("return getSelfPlayer():getSummonListCount()")
+    local pet = 0
+    for i= 0, mountCount - 1 do
+        local info = tonumber(BDOLua.Execute("return getSelfPlayer():getSummonDataByIndex(".. i .."):getCharacterKey()"))
+        if (60028 <= info and info <= 60087) or 60129 == info then
+            pet = pet + 1
+            break
+        end
+    end
+    if pet > 0 then
+        return true
+    else
+        return false
+    end
 end
 
------------------------------------------------------------------------------------------------------------------
+function Feral:findQuickSlotById(skillId)
+    local code = string.format([[
+    for i = 0, 25 do
+        local quickSlotKey = i - 1
+        local quickSlotInfo = getQuickSlotItem(quickSlotKey)
+        if CppEnums.QuickSlotType.eSkill == quickSlotInfo._type then
+            local skillNo = quickSlotInfo._skillKey:getSkillNo()
+            local skillTypeStaticWrapper = getSkillTypeStaticStatus(skillNo)
+            local skillName = skillTypeStaticWrapper:getName()
+            if skillNo == %i then
+                return quickSlotKey
+            end
+        end
+    end
+    ]], skillId)
+    slot = BDOLua.Execute(code)
+    return slot
+end
 
-function VitalicTamer:Roaming()
-	local selfPlayer = GetSelfPlayer()
-	
-	if not selfPlayer then
-		return
-	end
+if Feral.Gui.PetQuickSlot == nil and EdanSkills.GetSkill(TAMER_SUMMON_HEILANG) ~= 0 then
+    Feral.Gui.PetQuickSlot = Feral:findQuickSlotById(EdanSkills.GetSkill(TAMER_SUMMON_HEILANG))
+end
+if Feral.Gui.PetAttackSlot == nil and EdanSkills.GetSkill(TAMER_COMMAND_ATTACK) ~= 0 then
+    Feral.Gui.PetAttackSlot = Feral:findQuickSlotById(EdanSkills.GetSkill(TAMER_COMMAND_ATTACK))
+end
+
+------------- Attack Rotation --------------------------------------------------------------------------------------------
+function Feral:Attack(monster, isPull)
+    local player = GetSelfPlayer()
+    if not player or not monster then
+    	self.combos = nil
+    	return
+    end
+
+    if isPull and player.IsActionPending then
+        return
+    end
+
+    local distance = monster.Position.Distance2DFromMe - monster.BodySize - player.BodySize
+
+    if distance > 150 or not monster.IsLineOfSight or player.IsSwimming then
+        if player.CurrentActionName == "BT_Skill_IronPunch_SC_UP2" or player.CurrentActionName == "BT_Skill_WallBreak_SC_UP3" then
+            print("Pushed em too hard with our BJ ( ‾ʖ̫‾)")
+            player:SetActionState( Feral.Shift | Feral.Space, 100 )
+            return
+        elseif player.CurrentActionName == "BT_SKill_Senkou_UP3" or player.CurrentActionName == "BT_Skill_Senkou_SpearUP2" or player.CurrentActionName == "BT_Skill_Senkou_Grip_UP" then
+            print("Stuck in flash or pole animation lets end this!")
+            player:SetActionState( Feral.Shift | Feral.Space, 100 )
+        end
+        Bot.Pather:MoveDirectTo(monster.Position)
+        self.combos = nil
+        return
+    end
+
+    if player.CurrentActionName == "BT_WAIT_HOLD_ON" then
+        print("Stunned")
+        self.combos = nil
+        return
+    end
+
+    EdanScout.Update()
+    player:FacePosition(monster.Position)
+
+    -- copy any variables you want to use in your combo routine here
+    self.distance = distance
+    self.player = player
+    self.monster = monster
+    self.ispull = isPull
+
+    -- execute combos
+    if self.combos == nil or coroutine.status(self.combos) == 'dead' then
+        self.combos = coroutine.create(self.Combos)
+    end
+
+    local result,err = coroutine.resume(self.combos, self)
+    if err then
+        print("Combo error: "..err)
+    end
 
 end
 
---------------------------------------------------------------------------------------------------------------------
+------------- Combos -----------------------------------------------------------------------------------------------------
+function Feral:Combos()
+    if self.player.IsActionPending then
+        return
+    end
 
-function VitalicTamer:Attack(monsterActor)
-	
--------------------- Local Spell ID's --------------------------------------------------------
+    local wolfy = Feral:PetCheck()
 
-	local ABSORB_HEILANG = SkillsHelper.GetKnownSkillId(VitalicTamer.ABSORB_HEILANG)
-	local BOLT_WAVE = SkillsHelper.GetKnownSkillId(VitalicTamer.BOLT_WAVE)
-	local CHANCE_MAKER = SkillsHelper.GetKnownSkillId(VitalicTamer.CHANCE_MAKER)
-	local COMMAND_ATTACK = SkillsHelper.GetKnownSkillId(VitalicTamer.COMMAND_ATTACK)
-	local COMMAND_FOLLOW = SkillsHelper.GetKnownSkillId(VitalicTamer.COMMAND_FOLLOW)
-	local COMMAND_STAY = SkillsHelper.GetKnownSkillId(VitalicTamer.COMMAND_STAY)
-	local EVASION = SkillsHelper.GetKnownSkillId(VitalicTamer.EVASION)
-	local EVASIVE_ATTACK = SkillsHelper.GetKnownSkillId(VitalicTamer.EVASIVE_ATTACK)
-	local FLASH = SkillsHelper.GetKnownSkillId(VitalicTamer.FLASH)
-	local FLASH_POLE_THRUST = SkillsHelper.GetKnownSkillId(VitalicTamer.FLASH_POLE_THRUST)
-	local FLASH_STANCE_SHIFT = SkillsHelper.GetKnownSkillId(VitalicTamer.FLASH_STANCE_SHIFT)
-	local FLOWING_WATER = SkillsHelper.GetKnownSkillId(VitalicTamer.FLOWING_WATER)
-	local FLURRY_OF_KICKS = SkillsHelper.GetKnownSkillId(VitalicTamer.FLURRY_OF_KICKS)
-	local HEILANG_FEARFUL_TREMBLING = SkillsHelper.GetKnownSkillId(VitalicTamer.HEILANG_FEARFUL_TREMBLING)
-	local HEILANG_EARTHQUAKE = SkillsHelper.GetKnownSkillId(VitalicTamer.HEILANG_EARTHQUAKE)
-	local HEILANG_LIGHTNING_OF_EARTH = SkillsHelper.GetKnownSkillId(VitalicTamer.HEILANG_LIGHTNING_OF_EARTH)
-	local HELIANG_ROARING = SkillsHelper.GetKnownSkillId(VitalicTamer.HELIANG_ROARING)
-	local HEILANG_SCRATCH = SkillsHelper.GetKnownSkillId(VitalicTamer.HEILANG_SCRATCH)
-	local HEILANG_SURGING_TIDE = SkillsHelper.GetKnownSkillId(VitalicTamer.HEILANG_SURGING_TIDE)
-	local HEILANG_THROAT_BURN = SkillsHelper.GetKnownSkillId(VitalicTamer.HEILANG_THROAT_BURN)
-	local HEILANG_TRAMPLE = SkillsHelper.GetKnownSkillId(VitalicTamer.HEILANG_TRAMPLE)
-	local HEILANG_UPWARD_CLAW = SkillsHelper.GetKnownSkillId(VitalicTamer.HEILANG_UPWARD_CLAW)
-	local HEILANG_WHIPLASH = SkillsHelper.GetKnownSkillId(VitalicTamer.HEILANG_WHIPLASH)
-	local JOLT_WAVE = SkillsHelper.GetKnownSkillId(VitalicTamer.JOLT_WAVE)
-	local LEAF_SLASH = SkillsHelper.GetKnownSkillId(VitalicTamer.LEAF_SLASH)
-	local SHARPENING_CLAWS = SkillsHelper.GetKnownSkillId(VitalicTamer.SHARPENING_CLAWS)
-	local SOARING_KICK = SkillsHelper.GetKnownSkillId(VitalicTamer.SOARING_KICK)
-	local SPRING_OF_STAMINA = SkillsHelper.GetKnownSkillId(VitalicTamer.SPRING_OF_STAMINA)
-	local SPRING_OF_PROTECTION = SkillsHelper.GetKnownSkillId(VitalicTamer.SPRING_OF_PROTECTION)
-	local STRETCH_KICK = SkillsHelper.GetKnownSkillId(VitalicTamer.STRETCH_KICK)
-	local SUMMON_HEILANG = SkillsHelper.GetKnownSkillId(VitalicTamer.SUMMON_HEILANG)
-	local TREE_CLIMB = SkillsHelper.GetKnownSkillId(VitalicTamer.TREE_CLIMB)
-	local VOID_LIGHTNING = SkillsHelper.GetKnownSkillId(VitalicTamer.VOID_LIGHTNING)
+    Bot.Pather:Stop()
 
------------------------------------------------------------------------------------------------------------------
-	local monsters = GetMonsters()
-	local monsterCount = 0
-	local selfPlayer = GetSelfPlayer()
+    if Feral.Gui.Pet and Feral.Gui.PetQuickSlot ~= nil and wolfy == false and EdanSkills.SkillUsableCooldown(TAMER_SUMMON_HEILANG) then
+        print("Call Wolfy from slot " .. Feral.Gui.PetQuickSlot)
+        local slot = string.format([[quickSlot_UseSlot(%f)]], Feral.Gui.PetQuickSlot)
+        BDOLua.Execute(slot)
+        EdanCombo.WaitUntilDone()
+    end
 
-	if monsterActor then
-		local selfPlayer = GetSelfPlayer()
-        local actorPosition = Vector3(monsterActor.Position.X,monsterActor.Position.Y,monsterActor.Position.Z)
+    if EdanScout.MonstersInMeleeRange <= 3 then
+        -- Set pet to attck target
+        if Feral.Gui.PetAttack and Feral.Gui.PetQuickSlot ~= nil then
+            print("ATTACK MY BEAST ... ATTTAAAACCCKKKK" .. Feral.Gui.PetAttackSlot)
+            local slot = string.format([[quickSlot_UseSlot(%f)]], Feral.Gui.PetAttackSlot)
+            BDOLua.Execute(slot)
+        end
 
-        if actorPosition.Distance3DFromMe > monsterActor.BodySize + 150 or monsterActor.IsLineOfSight == false then
-            Bot.Pather:MoveDirectTo(actorPosition)
-        else
-            Bot.Pather:Stop()
-                        actorPosition.Y = actorPosition.Y + (monsterActor.BodyHeight*.75)
+        --flash and polethrust
+        if Feral.Gui.Flash and EdanSkills.SkillUsableCooldown(TAMER_FLASH) then
+            print("Flash the mob ^_~ *cheeky*")
+            EdanCombo.SetActionStateAtPosition( Feral.S | Feral.LMB, self.monster.Position, 100 )
+            if Feral.Gui.PoleThrust and EdanSkills.SkillUsableCooldown(TAMER_FLASH_POLE_THRUST) then
+                print( "Give em a bit of the Pole ( ͡° ͜ʖ ͡°)" )
+                EdanCombo.SetActionStateAtPosition( Feral.S | Feral.LMB, self.monster.Position, 500 )
+                return
+            end
+            return
+        end
 
-            for k, v in pairs(monsters) do
-				if v.IsAggro then
-					monsterCount = monsterCount + 1
-				end
-			end
+        --bolt jolt trample
+        if Feral.Gui.Bolt and EdanSkills.SkillUsableCooldown( TAMER_BOLT_WAVE ) then
+            print("Give Em a bolt")
+            EdanCombo.SetActionStateAtPosition( Feral.Shift | Feral.LMB, self.monster.Position, 100 )
+            if Feral.Gui.Jolt and EdanSkills.SkillUsableCooldown( TAMER_JOLT_WAVE ) then
+                print("Follow it with a Jolt")
+                EdanCombo.SetActionStateAtPosition( Feral.Shift | Feral.LMB, self.monster.Position, 100 )
+                if trampleCount < 2  then
+                    print("Trample?")
+                    EdanCombo.SetActionStateAtPosition( Feral.Space, self.monster.Position, 100)
+                    trampleCount = trampleCount + 1
+                    return
+                else
+                    print("LBP Cancel?")
+                    EdanCombo.SetActionState( Feral.Shift | Feral.Space, 100)
+                    trampleCount = 0
+                    return
+                end
+            end
+        end
 
-            if not selfPlayer.IsActionPending then
+        --upward claw
+        if Feral.Gui.UpwardClaw and EdanSkills.SkillUsableCooldown( TAMER_HEILANG_UPWARD_CLAW ) then
+            print("WOLFY CLAW")
+            EdanCombo.SetActionStateAtPosition( Feral.Shift | Feral.RMB, self.monster.Position, 100 )
+            return
+        end
 
-            ---------------------------------------------- Summon Heilang -----------------------------------------
+        --whiplash
+        if Feral.Gui.Whiplash and EdanSkills.SkillUsableCooldown( TAMER_HEILANG_WHIPLASH ) then
+            print("Whip yeah whip it good!")
+            EdanCombo.HoldUntilDone( Feral.RMB, self.monster.Position, 300 )
+            return
+        end
 
-            	if self.SummonPetInitial == false and not selfPlayer:IsSkillOnCooldown(SUMMON_HEILANG) and SkillsHelper.IsSkillUsable(SUMMON_HEILANG) then
-            		print("Starting! Casting Pet!")
-            		selfPlayer:UseSkill(SUMMON_HEILANG, 2000)
-            		self.SummonPetInitial = true
-            		return
-            	end
+    else
+        -- Set pet to attck target
+        if Feral.Gui.PetAttack and Feral.Gui.PetQuickSlot ~= nil then
+            print("ATTACK MY BEAST ... ATTTAAAACCCKKKK" .. Feral.Gui.PetAttackSlot)
+            local slot = string.format([[quickSlot_UseSlot(%f)]], Feral.Gui.PetAttackSlot)
+            BDOLua.Execute(slot)
+        end
+        --flash and polethrust
+        if Feral.Gui.Flash and EdanSkills.SkillUsableCooldown(TAMER_FLASH) then
+            print("Flash the mobs (.)(.) Boobies")
+            EdanCombo.SetActionStateAtPosition( Feral.S | Feral.LMB, self.monster.Position, 100 )
+            if Feral.Gui.PoleThrust and EdanSkills.SkillUsableCooldown(TAMER_FLASH_POLE_THRUST) then
+                print( "Let em touch the Pole ( ͡° ͜ʖ ͡°)" )
+                EdanCombo.SetActionStateAtPosition( Feral.S | Feral.LMB, self.monster.Position, 500 )
+                return
+            end
+            return
+        end
 
-            	if SUMMON_HEILANG ~= 0 and self.SummonPetTimer:Expired() and not selfPlayer:IsSkillOnCooldown(SUMMON_HEILANG) and SkillsHelper.IsSkillUsable(SUMMON_HEILANG) then
-            		print("We can summon our fluffy dog!")
-            		selfPlayer:UseSkill(SUMMON_HEILANG, 2000)
-            		SummonPetTimer:Reset()
-            		SummonPetTimer:Start()
-            		return
-            	end
+        -- Soaring Kick
+        if Feral.Gui.SoaringKick and EdanSkills.SkillUsableCooldown(TAMER_SOARING_KICK) then
+            print("I believe I can SOAR and KICK some fucker in the head")
+            EdanCombo.SetActionStateAtPosition( Feral.E, self.monster.Position, 100 )
+            return
+        end
 
-            -----------------------------------------------------------------------------------------------------------------------------
+         -- Void Lightning
+        if Feral.Gui.Void and wolfy == true and (self.player.ManaPercent >= Feral.Gui.VoidManaPercent) and EdanSkills.SkillUsableCooldown(TAMER_VOID_LIGHTNING) then --and EdanScout.MonstersInMeleeRange >= Feral.Gui.VoidMonsterCount
+            print("Void some lightning while Wolfsies out!!")
+            EdanCombo.SetActionStateAtPosition(Feral.Q, self.monster.Position, 2000)
+            print("Cancel void with some speed shit!!")
+            EdanCombo.SetActionState(Feral.Shift | Feral.Space, 100)
+            return
+        end
 
-			---------------------------------------- Void Lightning---------------------------------------
-				if VOID_LIGHTNING ~= 0 and selfPlayer.ManaPercent >= 10 and not selfPlayer:IsSkillOnCooldown(VOID_LIGHTNING)
-				and SkillsHelper.IsSkillUsable(VOID_LIGHTNING) and monsterCount >= 2 then
-					print("Atleast two on me! Casting Void Lightning!")
-					selfPlayer:SetActionStateAtPosition(ACTION_FLAG_SPECIAL_ACTION_1, actorPosition, 2000)
-					return
-				end
-			-----------------------------------------------------------------------------------------------------------------------------
+        --bolt jolt trample
+        if Feral.Gui.Bolt and EdanSkills.SkillUsableCooldown( TAMER_BOLT_WAVE ) then
+            print("Give Em a bolt")
+            EdanCombo.SetActionStateAtPosition( Feral.Shift | Feral.LMB, self.monster.Position, 100 )
+            if Feral.Gui.Jolt and EdanSkills.SkillUsableCooldown( TAMER_JOLT_WAVE ) then
+                print("Follow it with a Jolt")
+                EdanCombo.SetActionStateAtPosition( Feral.Shift | Feral.LMB, self.monster.Position, 100 )
+                if trampleCount < 2 then
+                    print("Trample? maybe it cancels?")
+                    EdanCombo.SetActionStateAtPosition( Feral.Space, self.monster.Position, 100)
+                    trampleCount = trampleCount + 1
+                    return
+                else
+                    print("LBP Cancel?")
+                    EdanCombo.SetActionState( Feral.Shift | Feral.Space, 100)
+                    trampleCount = 0
+                    return
+                end
+            end
+        end
 
+        --upward claw
+        if Feral.Gui.UpwardClaw and EdanSkills.SkillUsableCooldown( TAMER_HEILANG_UPWARD_CLAW ) then
+            print("WOLFY CLAW! T_T")
+            EdanCombo.SetActionStateAtPosition( Feral.Shift | Feral.RMB, self.monster.Position, 100 )
+            return
+        end
 
-			-------------------------------------------- Bolt Wave + Jolt Wave Combo ----------------------------------------------------
+        --whiplash
+        if Feral.Gui.Whiplash and EdanSkills.SkillUsableCooldown( TAMER_HEILANG_WHIPLASH ) then
+            print("Whip yeah whip it good!")
+            EdanCombo.HoldUntilDone( Feral.RMB, self.monster.Position, 300 )
+            return
+        end
 
-				if BOLT_WAVE ~= 0 and selfPlayer.Stamina >= 200 and selfPlayer.ManaPercent > 10 and not selfPlayer:IsSkillOnCooldown(HEILANG_TRAMPLE) then
-					print("Casting Bolt Wave + Jolt Wave Combo!")
-					selfPlayer:SetActionStateAtPosition(ACTION_FLAG_EVASION | ACTION_FLAG_MAIN_ATTACK, actorPosition, 1000)
-
-					if HEILANG_TRAMPLE ~= 0 and not selfPlayer:IsSkillOnCooldown(HEILANG_TRAMPLE) and selfPlayer.ManaPercent > 10 and string.match(selfPlayer.CurrentActionName, "WallBreak") then
-						print("Trample!")
-						selfPlayer:SetActionStateAtPosition(ACTION_FLAG_JUMP, actorPosition, 1200)
-						return
-					end
-					return
-				end
-
-			-------------------------------------------------------------------------------------------------------------------------------
-
-			---------------------------------------------- Upward Claw ---------------------------------------------------------------
-
-				if HEILANG_UPWARD_CLAW  ~= 0 and selfPlayer.ManaPercent > 10 and not selfPlayer:IsSkillOnCooldown(HEILANG_UPWARD_CLAW) then
-					print("Casting Upward Claw!")
-					selfPlayer:SetActionStateAtPosition(ACTION_FLAG_MOVE_BACKWARD | ACTION_FLAG_SECONDARY_ATTACK, actorPosition, 300)
-					return
-				end
-
-			----------------------------------------------------------------------------------------------------------------------------
-
-			------------------------------------------------- Surging Tide -------------------------------------------------------------
-
-				if HEILANG_SURGING_TIDE ~= 0 and selfPlayer.ManaPercent > 10 and not selfPlayer:IsSkillOnCooldown(HEILANG_SURGING_TIDE) then
-					print("Casting Surging Tide!")
-					selfPlayer:SetActionStateAtPosition(ACTION_FLAG_EVASION | ACTION_FLAG_SPECIAL_ACTION_3, actorPosition, 500)
-					return
-				end
-
-			---------------------------------------------- Whiplash ---------------------------------------------------
-				if HEILANG_WHIPLASH ~= 0 and selfPlayer.ManaPercent > 10 and selfPlayer.HealthPercent <= 70 then
-					print("Using Whiplash!")
-					selfPlayer:SetActionStateAtPosition(ACTION_FLAG_SECONDARY_ATTACK, actorPosition, 600)
-					return
-				end
-
-			-----------------------------------------------------------------------------------------------------------------------------
-
-			----------------------------------------  Lightning of Earth ----------------------------------------------------------------
-				if HEILANG_LIGHTNING_OF_EARTH ~= 0 and selfPlayer.ManaPercent > 10 then
-					print("Lightning of Earth Spam!")
-					selfPlayer:SetActionStateAtPosition(ACTION_FLAG_MOVE_FORWARD | ACTION_FLAG_SECONDARY_ATTACK, actorPosition)
-					return
-				end
-
-			------------------------------------------------------------------------------------------------------------------------------
-
-			---------------------------------------- Low on Mana? Spam Leaf Slash to Regain! ----------------------------------------------
-				if selfPlayer.ManaPercent < 10 then 
-					print("Low on Mana! Casting Leaf Slash!")
-					selfPlayer:SetActionStateAtPosition(ACTION_FLAG_MOVE_FORWARD | ACTION_FLAG_MAIN_ATTACK, actorPosition)
-					return
-				end
-
-			------------------------------------------------------------------------------------------------------------------------------
----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-			end	
-		end
-	end
+    end
 end
 
-return VitalicTamer()
+------------- Roaming ----------------------------------------------------------------------------------------------------
+function Feral:Roaming()
+    local selfPlayer = GetSelfPlayer()
+    if not selfPlayer then
+        return
+    end
 
+    if Feral.Gui.PetQuickSlot == nil then
+        Feral.Gui.PetQuickSlot = Feral:findQuickSlotById(EdanSkills.GetSkill(TAMER_SUMMON_HEILANG))
+    end
+    if Feral.Gui.PetAttackSlot == nil then
+        Feral.Gui.PetAttackSlot = Feral:findQuickSlotById(EdanSkills.GetSkill(TAMER_COMMAND_ATTACK))
+    end
+
+    local wolfy = Feral:PetCheck()
+
+    if Feral.Gui.Pet and Feral.Gui.PetQuickSlot ~= nil and wolfy == false and EdanSkills.SkillUsableCooldown(TAMER_SUMMON_HEILANG) then
+        print("Call Wolfy from slot " .. Feral.Gui.PetQuickSlot)
+        local slot = string.format([[quickSlot_UseSlot(%f)]], Feral.Gui.PetQuickSlot)
+        BDOLua.Execute(slot)
+        --EdanCombo.WaitUntilDone()
+    end
+
+
+    self.combos = nil
+
+    if selfPlayer.CurrentActionName == "BT_Skill_IronPunch_SC_UP2" or selfPlayer.CurrentActionName == "BT_Skill_WallBreak_SC_UP3" then
+        print("Combat over but still bolting or jolting... what what lets fix that!")
+        selfPlayer:SetActionState( Feral.Shift | Feral.Space, 100 )
+        return
+    end
+
+    if selfPlayer.CurrentActionName == "BT_SKill_Senkou_UP3" or selfPlayer.CurrentActionName == "BT_Skill_Senkou_SpearUP2" or selfPlayer.CurrentActionName == "BT_Skill_Senkou_Grip_UP" then
+        print("Stuck in flash or pole animation lets end this!")
+        selfPlayer:SetActionState( Feral.Shift | Feral.Space, 100 )
+    end
+end
+
+------------- User Interface ---------------------------------------------------------------------------------------------
+function Feral:UserInterface()
+    if Feral.Gui.ShowGui then
+        _, Feral.Gui.ShowGui = ImGui.Begin("Feral - Options", true, ImVec2(150, 450), -1.0) --, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize)
+        if EdanSkills.GetSkill(TAMER_SUMMON_HEILANG) ~= 0 then
+            if Feral.Gui.PetQuickSlot == nil or Feral.Gui.PetAttackSlot == nil then
+                ImGui.TextColored(ImVec4(1,0,0,1), "Summon Heilang skill and Command: Attack skill")
+                ImGui.TextColored(ImVec4(1,0,0,1), "must be put on the quickslot bar for those skills to work")
+            end
+            ImGui.Separator()
+            ImGui.Columns(2, "SkillData", true)
+            ImGui.TextColored(ImVec4(1,0.843,0,1), "Skill")
+            ImGui.NextColumn()
+            ImGui.TextColored(ImVec4(1,0.843,0,1), "QuickSlot")
+            ImGui.NextColumn()
+            ImGui.Separator()
+            ImGui.Text("Summon Heilang")
+            ImGui.NextColumn()
+            if Feral.Gui.PetQuickSlot ~= nil then
+                ImGui.Text(tostring(math.floor((Feral.Gui.PetQuickSlot + 1))))
+            else
+                ImGui.Text(tostring(Feral.Gui.PetQuickSlot))
+            end
+            ImGui.NextColumn()
+            ImGui.Text("Command: Attack skill")
+            ImGui.NextColumn()
+            if Feral.Gui.PetAttackSlot ~= nil then
+                ImGui.Text(tostring(math.floor((Feral.Gui.PetAttackSlot + 1))))
+            else
+                ImGui.Text(tostring(Feral.Gui.PetAttackSlot))
+            end
+            ImGui.NextColumn()
+            ImGui.Columns(1)
+            ImGui.Separator()
+            if ImGui.Button("Reload QuickSlots", ImVec2(ImGui.GetContentRegionAvailWidth(), 20)) then
+                Feral.Gui.PetQuickSlot = Feral:findQuickSlotById(EdanSkills.GetSkill(TAMER_SUMMON_HEILANG))
+                Feral.Gui.PetAttackSlot = Feral:findQuickSlotById(EdanSkills.GetSkill(TAMER_COMMAND_ATTACK))
+            end
+            if ImGui.CollapsingHeader( "Pet Options","id_pet_options" ,true ,true) then
+                if ImGui.TreeNode("Pet Summon Options") then
+                    _, Feral.Gui.Pet = ImGui.Checkbox("Use Pet##id_gui_pet", Feral.Gui.Pet)
+                    _, Feral.Gui.PetAttack = ImGui.Checkbox("Make Pet Attack##id_gui_petattack", Feral.Gui.PetAttack)
+                    ImGui.TreePop()
+                end
+            end
+        end
+        if ImGui.CollapsingHeader( "Spell Options","id_spell_options" ,true ,true) then
+            if ImGui.TreeNode("Void Lightning Options") then
+                _, Feral.Gui.Void = ImGui.Checkbox("Use Void Lightning##id_gui_void", Feral.Gui.Void)
+                _, Feral.Gui.VoidManaPercent = ImGui.SliderInt("MP%##id_gui_voidmanapercent", Feral.Gui.VoidManaPercent, 1, 100)
+                ImGui.TreePop()
+            end
+            _, Feral.Gui.Flash = ImGui.Checkbox("Use Flash##id_gui_flash", Feral.Gui.Flash)
+            _, Feral.Gui.PoleThrust = ImGui.Checkbox("Use Pole Thrust##id_gui_pole", Feral.Gui.PoleThrust)
+            _, Feral.Gui.Bolt = ImGui.Checkbox("Use Bolt##id_gui_bolt", Feral.Gui.Bolt)
+            _, Feral.Gui.Jolt = ImGui.Checkbox("Use Jolt##id_gui_jolt", Feral.Gui.Jolt)
+            --_, Feral.Gui.Trample = ImGui.Checkbox("Use Trample##id_gui_trample", Feral.Gui.Trample)
+            _, Feral.Gui.UpwardClaw = ImGui.Checkbox("Use Upward Claw##id_gui_upwardclaw", Feral.Gui.UpwardClaw)
+            _, Feral.Gui.Whiplash = ImGui.Checkbox("Use Whiplash##id_gui_whiplash", Feral.Gui.Whiplash)
+            _, Feral.Gui.SoaringKick = ImGui.Checkbox("Use Soaring Kick##id_gui_soaringkick", Feral.Gui.SoaringKick)
+        end
+        ImGui.End()
+    end
+end
+
+return setmetatable({}, Feral)
